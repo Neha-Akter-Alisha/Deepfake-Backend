@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hybrid DeepFake & Forgery Detector</title>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: #f0f2f5; margin: 0; }
+.container { background: #fff; padding: 2.5rem; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.1); text-align: center; max-width: 500px; width: 90%; }
+h1 { color: #333; margin-bottom: 1rem; }
+p { color: #666; margin-bottom: 2rem; }
+.error { color: #d9534f; margin-top: 1rem; font-weight: bold; }
+.upload-area { border: 2px dashed #007bff; border-radius: 8px; padding: 2rem; }
+input[type="file"] { display: none; }
+.file-label { background-color: #007bff; color: white; padding: 12px 24px; border-radius: 5px; cursor: pointer; font-size: 16px; transition: background-color 0.3s; display: inline-block; }
+.file-label:hover { background-color: #0056b3; }
+#file-name { margin-top: 1rem; color: #555; font-style: italic; }
+.options { margin: 1.5rem 0; display: flex; justify-content: center; gap: 2rem; }
+.options label { display: flex; align-items: center; cursor: pointer; }
+.options input[type="radio"] { margin-right: 0.5rem; }
+button { background-color: #28a745; color: white; border: none; padding: 12px 28px; border-radius: 5px; cursor: pointer; font-size: 18px; font-weight: bold; margin-top: 1rem; width: 100%; transition: background-color 0.3s; }
+button:hover { background-color: #218838; }
+button:disabled { background-color: #ccc; cursor: not-allowed; }
+</style>
+</head>
+<body>
+<div class="container">
+<h1>Hybrid Analysis Engine</h1>
+<p>Upload an image to check for facial deepfakes or document forgery.</p>
+
+    <form id="upload-form" action="/upload" method="post" enctype="multipart/form-data">
+        <div class="upload-area">
+            <label for="file-upload" class="file-label">Choose an Image</label>
+            <input id="file-upload" type="file" name="file" accept="image/png, image/jpeg, image/jpg" required>
+            <div id="file-name">No file selected</div>
+        </div>
+
+        <div class="options">
+            <label>
+                <input type="radio" name="analysis_type" value="image" checked>
+                Face / Image DeepFake
+            </label>
+            <label>
+                <input type="radio" name="analysis_type" value="document">
+                Document Forgery
+            </label>
+        </div>
+
+        <button id="submit-btn" type="submit" disabled>Analyze Image</button>
+    </form>
+    
+    {% if error %}
+        <p class="error"><strong>Error:</strong> {{ error }}</p>
+    {% endif %}
+</div>
+
+<script>
+    const fileUpload = document.getElementById('file-upload');
+    const fileNameDisplay = document.getElementById('file-name');
+    const submitBtn = document.getElementById('submit-btn');
+
+    fileUpload.addEventListener('change', () => {
+        if (fileUpload.files.length > 0) {
+            fileNameDisplay.textContent = fileUpload.files[0].name;
+            submitBtn.disabled = false;
+        } else {
+            fileNameDisplay.textContent = 'No file selected';
+            submitBtn.disabled = true;
+        }
+    });
+</script>
+
+</body>
+</html>
