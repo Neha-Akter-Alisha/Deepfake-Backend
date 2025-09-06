@@ -1,73 +1,119 @@
-from flask import Flask, render_template, request, url_for
+from flask import Flask, request, jsonify, render_template, url_for
 import os
-from model import HybridDeepFakeDetector
 from werkzeug.utils import secure_filename
+from model import HybridDeepFakeDetector
 
 app = Flask(__name__)
-UPLOAD_FOLDER = 'static/uploads/'
-PROCESSED_FOLDER = 'static/processed/'
 
-# Create folders if they don't exist
+# --- Configuration ---
+UPLOAD_FOLDER = 'static/uploads'
+PROCESSED_FOLDER = 'static/processed'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf'}
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['PROCESSED_FOLDER'] = PROCESSED_FOLDER
+
+# Create necessary folders if they don't exist
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(PROCESSED_FOLDER, exist_ok=True)
 
-# Load our new, smarter detector model
+# --- Model Initialization ---
+# Load the detector model once when the application starts
 detector = HybridDeepFakeDetector()
 
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 @app.route('/')
-def home():
+def index():
+    """Serves the main HTML page."""
     return render_template('index.html')
 
-@app.route('/upload', methods=['POST'])
-def upload():
+@app.route('/analyze', methods=['POST'])
+def analyze():
+    """Handles the file upload and analysis, returning JSON."""
     if 'file' not in request.files:
-        return render_template('index.html', error="No file part in the request!")
-
+        return jsonify({'error': 'No file part in the request.'}), 400
+    
     file = request.files['file']
-    if file.filename == '':
-        return render_template('index.html', error="No file selected for uploading!")
-
     analysis_type = request.form.get('analysis_type')
+
+    if file.filename == '':
+        return jsonify({'error': 'No file selected.'}), 400
+
     if not analysis_type:
-        return render_template('index.html', error="Please select an analysis type!")
+        return jsonify({'error': 'No analysis type selected.'}), 400
 
-    if file:
+    if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
-        file_path = os.path.join(UPLOAD_FOLDER, filename)
-        file.save(file_path)
+        upload_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(upload_path)
+        
+        file_extension = filename.rsplit('.', 1)[1].lower()
 
-        probability = 0.0
-        result_text = "Error"
-        processed_image_filename = ""
+        try:
+            # --- PDF Analysis Logic ---
+            if file_extension == 'pdf':
+                if analysis_type == 'image':
+                    return jsonify({'error': 'DeepFake analysis is for images (JPG, PNG), not PDFs.'}), 400
+                
+                pdf_results = detector.analyze_pdf_forgery(upload_path, app.config['PROCESSED_FOLDER'])
+                
+                # Convert local paths to URLs for the frontend
+                for result in pdf_results:
+                    if result.get('original_page_image_path'):
+                        result['original_image_url'] = url_for('static', filename=f"processed/{os.path.basename(result['original_page_image_path'])}")
+                    if result.get('analyzed_image_path'):
+                        result['analyzed_image_url'] = url_for('static', filename=f"processed/{os.path.basename(result['analyzed_image_path'])}")
 
-        # --- This is the new, smarter logic ---
-        if analysis_type == 'image':
-            # Use the AI model for images/faces
-            probability = detector.predict_image_deepfake(file_path)
-            processed_image_filename = detector.simulate_heatmap_for_image(file_path)
-            result_text = "Fake" if probability > 0.5 else "Real"
-            # We present probability as a percentage
-            probability *= 100
+                return jsonify({
+                    'analysis_type': 'pdf',
+                    'results': pdf_results,
+                    'original_filename': filename
+                })
 
-        elif analysis_type == 'document':
-            # Use only ELA for documents
-            # The returned score is not a 0-1 probability, it's a forgery score.
-            # We set a threshold to decide if it's suspicious.
-            forgery_score, processed_image_filename = detector.analyze_document_forgery(file_path)
+            # --- Image Analysis Logic ---
+            elif analysis_type == 'image':
+                probability, highlighted_path = detector.predict_image_deepfake(upload_path, app.config['PROCESSED_FOLDER'])
+                
+                real_score = (1 - probability) * 100
+                fake_score = probability * 100
+                verdict = "DeepFake Detected" if probability > 0.5 else "Likely Authentic"
+                explanation = "The model detected subtle artifacts consistent with AI-generated images." if probability > 0.5 else "The model did not find significant evidence of AI manipulation."
+                
+                return jsonify({
+                    'verdict': verdict,
+                    'real_score': f"{real_score:.2f}",
+                    'fake_score': f"{fake_score:.2f}",
+                    'explanation': explanation,
+                    'analysis_type': 'image',
+                    'original_image_url': url_for('static', filename=f'uploads/{filename}'),
+                    'analyzed_image_url': url_for('static', filename=f'processed/{os.path.basename(highlighted_path)}') if highlighted_path else None
+                })
+
+            elif analysis_type == 'document':
+                forgery_score, verdict, analyzed_path = detector.analyze_document_forgery(upload_path, app.config['PROCESSED_FOLDER'])
+                
+                explanation = "ELA detected inconsistencies in JPEG compression levels, suggesting a potential digital modification." if verdict == "Suspicious Forgery" else "The document's compression levels appear consistent, indicating it is likely unmodified."
+
+                return jsonify({
+                    'verdict': verdict,
+                    'forgery_score': f"{forgery_score:.2f}",
+                    'explanation': explanation,
+                    'analysis_type': 'document',
+                    'original_image_url': url_for('static', filename=f'uploads/{filename}'),
+                    'analyzed_image_url': url_for('static', filename=f'processed/{os.path.basename(analyzed_path)}') if analyzed_path else None
+                })
             
-            # Let's set a threshold. A score > 15 is suspicious. Adjust as needed.
-            FORGERY_THRESHOLD = 15.0
-            result_text = "Forgery Detected (Suspicious)" if forgery_score > FORGERY_THRESHOLD else "Likely Authentic"
-            probability = forgery_score # Pass the raw score to the template
+            else:
+                return jsonify({'error': 'Invalid analysis type specified.'}), 400
 
-        return render_template('result.html',
-                               original_image=filename,
-                               processed_image=processed_image_filename,
-                               probability=probability,
-                               result=result_text,
-                               analysis_type=analysis_type)
+        except Exception as e:
+            print(f"An error occurred during analysis: {e}")
+            return jsonify({'error': 'An internal error occurred during processing. Please try again.'}), 500
+    
+    return jsonify({'error': 'Invalid file type.'}), 400
 
-    return render_template('index.html', error="File could not be saved.")
 
 if __name__ == '__main__':
     app.run(debug=True)
