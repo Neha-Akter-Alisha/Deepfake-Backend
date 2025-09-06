@@ -1,70 +1,74 @@
-AUTOMATIC DETECTION OF FRAUDULENT IMAGE AND DOCUMENTS USING DEEP LEARNING
+AUTOMATIC DETECTION OF FRAUDULENT IMAGE AND DOCUMENTS USING DEEP LEARNING:-
 
-A web-based application that uses a hybrid approach to detect digital forgeries. It leverages a powerful pre-trained deep learning model to identify deepfakes in images and videos, and uses Error Level Analysis (ELA) to spot potential manipulations in documents.
+An intelligent, web-based tool designed to analyze and detect digital media manipulation. This application leverages a hybrid model to provide robust analysis for both AI-generated deepfake images and forged documents, including multi-page PDFs.
 
-Key Features:
-Dual Analysis Modes: Users can choose between two distinct analysis types:
-•	Image DeepFake Detection: Utilizes an AI model to analyze images and faces for signs of deepfake manipulation.
-•	Document Forgery Detection: Employs Error Level Analysis (ELA) to identify edited or copy-pasted sections within document images (e.g., JPEGs).
-•	Simple Web Interface: An easy-to-use interface built with Flask allows users to upload an image and receive an instant analysis.
-•	Quantitative Scoring: Provides a confidence score for deepfakes and a forgery score for documents to help quantify the analysis.
-•	Visual Feedback: Generates a visual heatmap to highlight areas of potential manipulation.
+Key Features:-
 
-How It Works:
-This project combines two different techniques to create a more robust detection system.
-1. DeepFake Detection (AI Model)
-For standard images and faces, the application uses the tf_efficientnet_b7_ns model, a state-of-the-art image classification model made available through the timm library. This model was pre-trained on millions of images and is highly effective at identifying the subtle digital artifacts and inconsistencies that are characteristic of deepfakes. The model outputs a probability score indicating the likelihood that the image is a deepfake.
+* Hybrid Analysis Model: Utilizes a powerful deep learning model (EfficientNet-B7) for detecting deepfake images and a forensic technique (Error Level Analysis - ELA) for document forgery.
 
-2. Document Forgery Detection (ELA)
-For documents, the application switches to Error Level Analysis (ELA). This technique works by detecting discrepancies in the JPEG compression levels across an image. When a section of an image is edited, copied, or inserted, it is often saved at a different compression level than the rest of the image. ELA highlights these mismatched areas, making them visible in a heatmap. The application calculates a "forgery score" based on the intensity of these discrepancies.
+* Multi-Format Support: Analyze a wide range of file types, including JPG, PNG, and multi-page PDF documents.
 
-Installation and Setup:
-Follow these steps to run the application on your local machine.
-Prerequisites:-
-•	Python 3.8 or newer.
-•	pip (Python package installer).
+* Interactive Single-Page App (SPA): A modern, user-friendly interface that provides a seamless analysis experience without page reloads.
 
-Step-by-Step Guide:-
-•	Clone the Repository
-        git clone (https://github.com/Neha-Akter-Alisha/Deepfake-Backend.git)
-        cd your-repository-name
+* Clear Visual Feedback: Analysis results are presented with a full-image color overlay—green for authentic and red for suspicious—making the verdict instantly clear.
 
-•	Create and Activate a Virtual Environment
-        It is highly recommended to use a virtual environment to manage project dependencies.
+* Detailed Reporting: Provides quantitative confidence scores (e.g., DeepFake Score, Forgery Score) and a methodological explanation for each analysis.
 
-•	Create the environment
-        python -m venv venv
+* PDF Page-by-Page Analysis: When a PDF is uploaded, the tool analyzes each page individually and presents a detailed report for every page.
 
-•	Activate the environment (Windows)
-         .\venv\Scripts\Activate
+Technologies Used
+This project is built with a combination of powerful backend and frontend technologies.
 
-•	Install Dependencies
-        All required packages are listed in the requirements.txt file.
-        pip install -r requirements.txt
-(Note: This step may take several minutes as torch and torchvision are large libraries.)
+Backend
+* Python: Core programming language.
 
-•	Run the Application
-         Once the installation is complete, you can start the Flask server.
-         python app.py
-•	Access the Application
-         Open your web browser and navigate to:
-         https://www.google.com/search?q=http://127.0.0.1:5000
+* Flask: A lightweight web framework to serve the application and handle API requests.
 
-How to Use:-
-•	Open the web application in your browser.
-•	Select the analysis type: "Face / Image DeepFake" or "Document Forgery".
-•	Click "Choose File" and select an image from your computer.
-•	Click the "Analyze Image" button.
-•	The results page will display the analysis, the score, and the original and processed images.
+* PyTorch: The deep learning framework used to run the deepfake detection model.
 
-Technologies Used:
-•	Backend: Flask
-•	Deep Learning: PyTorch, Timm (PyTorch Image Models)
-•	Image & Document Processing:
-•	Pillow (PIL): Used for core image manipulation and implementing the Error Level Analysis (ELA) for document forgery.
-•	OpenCV: Used for general image handling tasks.
-•	NumPy: Used for numerical operations to calculate the forgery score.
-•	Frontend: HTML, CSS
+* timm (PyTorch Image Models): A library for easy access to state-of-the-art pre-trained image models like EfficientNet.
 
-License
-This project is licensed under the MIT License. See the LICENSE file for more details.
+* OpenCV & Pillow (PIL): Essential libraries for advanced image processing, manipulation, and analysis.
+
+* PyMuPDF (fitz): A high-performance library for opening, rendering, and extracting data from PDF documents.
+
+* NumPy: Used for efficient numerical operations on image data.
+
+Frontend
+* HTML5: The structure of the web application.
+
+* CSS3: Custom styling for the user interface, animations, and color themes.
+
+* Vanilla JavaScript: Handles all client-side interactivity, API communication (fetch), and dynamic DOM manipulation to create the single-page experience.
+
+Setup and Installation
+To run this project locally, please follow these steps.
+
+* Prerequisites
+Python 3.8 or newer.
+
+pip (Python package installer).
+
+1. Clone the Repository
+git clone (https://github.com/your-username/your-repo-name.git)
+cd your-repo-name
+
+2. Create and Activate a Virtual Environment
+It is highly recommended to use a virtual environment to manage project dependencies.
+
+Windows:
+
+python -m venv venv
+.\venv\Scripts\Activate
+
+3. Install Dependencies
+The requirements.txt file contains all the necessary Python packages.
+
+pip install -r requirements.txt
+
+Note: The torch and torchvision libraries are large and may take several minutes to download and install. A stable internet connection is required.
+
+4. Run the Application
+Once the dependencies are installed, you can start the Flask server.
+
+python app.py
